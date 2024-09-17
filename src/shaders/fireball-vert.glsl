@@ -88,17 +88,60 @@ float pattern(vec3 p)
     return fbm( p + 4.0*r );
 }
 
+float easeOutQuad(float x) {
+    return 1.0f - (1.0f - x) * (1.0f - x);
+}
+
+float bias(float b, float t){
+    return pow(t, log(b)/log(0.5));
+}
+
+float gain(float g, float t){
+    if(t<0.5){
+        return bias(1.-g,2.*t)/2.;
+    }
+    else{
+        return 1.-bias(1.-g,2.-2.*t)/2.;
+    }
+}
+
+vec3 CalculateFlames(vec3 pos) {
+
+    // The bigger lower level shapes
+    float noise = noise(pos.xyz * 2.f + (u_Tick / 60.f));
+
+    float height = bias((pos.y + 1.f) / 2.f, 0.1f);
+
+    // Create shape on bottom half
+    if(pos.y < 0.f) {
+        float desiredY = pos.y * easeOutQuad(abs(pos.y + noise / 3.f));
+        pos.y = mix(pos.y, desiredY, height);
+    }
+
+    // Find verticle angle of the position
+    float angleFromXZ = dot(pos, vec3(0.f, 1.f, 0.f));
+
+    // Use noise to compute flames
+    float flames = abs(mix(pos.y, pos.y + noise, angleFromXZ)) * 1.2f + 0.4f;
+
+    // Interpolate flames based on height
+    pos.y = mix(pos.y, flames, height);
+
+    return pos;
+}
+
 void main()
 {
     fs_Col = vs_Col;                         // Pass the vertex colors to the fragment shader for interpolation
-    float t = u_Tick/100. + 20.;
-    float s = (sin(t/20.));
-    float c = (sin(-t+3.141592653589/2.));
+    float t = u_Tick/100. + 20.;;
+    float s = gain(0.4,(mod(sqrt(t/(sqrt(2.)*10.)),1000.)));
+    float c = bias(0.8,(mod(sqrt(t*sqrt(3.)/2.+3.141592653589/2.),1000.)));
     fs_Pos = vs_Pos; 
-    float n = noise(vec3(fs_Pos*(+ 1.-2.*s*s + 2.*c*c-1.)));
-    float f = fbm(vec3(fs_Pos*(2.*c+c*s+2.*s)));
-    float p = pattern(vec3(fs_Pos/10.*(s+c)*20.))*2.;
-    fs_Pos = fs_Pos+vec4(fs_Pos.xyz*n,1)+vec4(fs_Pos.xyz*f,0)+ (fs_Pos.y>0.? vec4(0,abs(p),0,0):vec4(0.));
+    float n = bias(0.8,noise(vec3(fs_Pos*(+ 1.-2.*s*s + 2.*c*c-1.))));
+    float f = bias(0.8,fbm(vec3(fs_Pos*(2.*c+c*s+2.*s))));
+    float p = bias(0.9,pattern(vec3(fs_Pos/10.*(s+c)*20.)));
+    fs_Pos = vec4(CalculateFlames(fs_Pos.xyz),1.);
+    fs_Pos = vec4(fs_Pos.xyz*n,1)+vec4(fs_Pos.xyz*f,1.)+ (fs_Pos.y>0.? vec4(0,abs(p),0,0):vec4(0.));
     
     
     
@@ -113,7 +156,7 @@ void main()
 
     vec4 modelposition = u_Model * fs_Pos;   // Temporarily store the transformed vertex positions for use below
 
-    fs_LightVec = lightPos - modelposition;  // Compute the direction in which the light source lies
+    fs_LightVec = vec4(0,-1.,0,1.);// lightPos - modelposition;  // Compute the direction in which the light source lies
 
     gl_Position = u_ViewProj * modelposition;// gl_Position is a built-in variable of OpenGL which is
                                              // used to render the final positions of the geometry's vertices

@@ -72,11 +72,49 @@ float pattern(vec3 p)
                    fbm( p + 4.0*q + vec3(8.3,2.8,23) ),
                    fbm( p + 4.0*q + vec3(167,942,3) ));
 
-    return fbm( p + 4.0*r );
+    vec3 m = vec3( fbm( p + 4.0*q + 8.0*r + vec3(.7*2.,42./(3.43),03213.3) ),
+                   fbm( p + 4.0*q + 8.0*r + vec3(.3*2.,48./(3.43),3.321) ),
+                   fbm( p + 4.0*q + 8.0*r + vec3(67.*2.,42./(3.43),0.321) ));
+
+    return fbm( p + 4.0*r +8.*m);
+}
+
+float gradient(vec3 pos){
+    return clamp(length(pos)/2.,0.,1.);
+}
+
+float bias(float b, float t){
+    return pow(t, log(b)/log(0.5));
+}
+
+float gain(float g, float t){
+    if(t<0.5){
+        return bias(1.-g,2.*t)/2.;
+    }
+    else{
+        return 1.-bias(1.-g,2.-2.*t)/2.;
+    }
 }
 
 void main()
 {
+    vec4 diffuseColor = u_Color;
+    vec4 topColor = u_Color;
+
+    float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
+
+    diffuseTerm = clamp(diffuseTerm, 0., 1.);
+
+    float ambientTerm = 0.99f;
+    float lightIntensity = diffuseTerm + ambientTerm;
+    float direction = dot(normalize(fs_Nor.xyz), normalize(fs_Pos.xyz - vec3(0,0,5.)));
+    diffuseColor = vec4(mix(diffuseColor.xyz, topColor.xyz + (fbm(fs_Pos.xyz) * 0.33f), bias(((fs_Pos.y) / (1.5f)), 0.27f + (abs(sin(u_Time / 10.f))) * 0.1f)), 1.f);
+
+
     vec3 pos = vec3(fs_Pos[0], fs_Pos[1], fs_Pos[2]);
-    out_Col = u_Color * pattern(pos);
+    pos = (pos+vec3(1000.,0,0))/5.;
+    if(fs_Pos.y<0.)
+        diffuseColor = u_Color;
+
+    out_Col = vec4(diffuseColor.xyz*(gain(0.8,gradient(pos)*pattern(pos))),1.);
 }
