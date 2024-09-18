@@ -31,6 +31,8 @@ class ShaderProgram {
   unifViewProj: WebGLUniformLocation;
   unifColor: WebGLUniformLocation;
   unifColor2: WebGLUniformLocation;
+  unifColor3:WebGLUniformLocation;
+  unifScale: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
@@ -52,6 +54,8 @@ class ShaderProgram {
     this.unifViewProj   = gl.getUniformLocation(this.prog, "u_ViewProj");
     this.unifColor      = gl.getUniformLocation(this.prog, "u_Color");
     this.unifColor2      = gl.getUniformLocation(this.prog, "u_Color2");
+    this.unifColor3      = gl.getUniformLocation(this.prog, "u_Color3");
+    this.unifScale      = gl.getUniformLocation(this.prog, "u_Scale");
   }
 
   setTick(tick: GLfloat){
@@ -100,6 +104,20 @@ class ShaderProgram {
     this.use();
     if (this.unifColor2 !== -1) {
       gl.uniform4fv(this.unifColor2, color);
+    }
+  }
+
+  setTertiaryColor(color: vec4) {
+    this.use();
+    if (this.unifColor3 !== -1) {
+      gl.uniform4fv(this.unifColor3, color);
+    }
+  }
+
+  setScale(scale: GLfloat) {
+    this.use();
+    if (this.unifScale !== -1) {
+      gl.uniform1f(this.unifScale, scale);
     }
   }
 

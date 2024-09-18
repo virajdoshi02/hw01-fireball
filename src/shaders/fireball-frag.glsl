@@ -12,6 +12,8 @@
 precision highp float;
 
 uniform vec4 u_Color; // The color with which to render this instance of geometry.
+uniform vec4 u_Color2;
+uniform vec4 u_Color3;
 uniform float u_Tick;
 // These are the interpolated values out of the rasterizer, so you can't know
 // their specific values without knowing the vertices that contributed to them
@@ -94,22 +96,12 @@ float gain(float g, float t){
 
 void main()
 {
+    vec4 botColor = u_Color2;
+    vec4 topColor = u_Color3;
     vec4 diffuseColor = u_Color;
-    vec4 topColor = u_Color;
-
-    float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
-
-    diffuseTerm = clamp(diffuseTerm, 0., 1.);
-
-    float ambientTerm = 0.99f;
-    float lightIntensity = diffuseTerm + ambientTerm;
-    float direction = dot(normalize(fs_Nor.xyz), normalize(fs_Pos.xyz - vec3(0,0,5.)));
-    diffuseColor = vec4(mix(diffuseColor.xyz, topColor.xyz + (fbm(fs_Pos.xyz) * 0.33f), bias(((fs_Pos.y) / (1.5f)), 0.27f + (abs(sin(u_Tick / 10.f))) * 0.1f)), 1.f);
-
+    diffuseColor = diffuseColor*0.2 + vec4(mix(topColor.xyz, botColor.xyz, gain(1.-clamp(fs_Pos.y/1. ,0., 1.),0.7)), 1.f)*0.8;
 
     vec3 pos = vec3(fs_Pos[0], fs_Pos[1], fs_Pos[2]);
     pos = pos + vec3(0,-2.,0);
-    if(fs_Pos.y<0.)
-        diffuseColor = u_Color;
     out_Col = vec4(diffuseColor.xyz*(gain(0.6,gradient(pos)*pattern(pos - vec3(0,mod(u_Tick/20.,10000.),0)))),1.);
 }

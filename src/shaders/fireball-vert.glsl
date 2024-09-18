@@ -7,7 +7,7 @@
 //This simultaneous transformation allows your program to run much faster, especially when rendering
 //geometry with millions of vertices.
 uniform float u_Tick;
-
+uniform float u_Scale;
 uniform mat4 u_Model;       // The matrix that defines the transformation of the
                             // object we're rendering. In this assignment,
                             // this will be the result of traversing your scene graph.
@@ -142,7 +142,7 @@ void main()
     float p = bias(0.9,pattern(vec3(fs_Pos/10.*(s+c)*20.)));
     fs_Pos = vec4(CalculateFlames(fs_Pos.xyz),1.);
     fs_Pos = vec4(fs_Pos.xyz*n,1)+vec4(fs_Pos.xyz*f,1.)+ (fs_Pos.y>0.? vec4(0,abs(p),0,0):vec4(0.));
-    
+    fs_Pos = vec4(fs_Pos.xyz*u_Scale,1);
     
     
     

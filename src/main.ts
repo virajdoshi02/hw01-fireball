@@ -18,12 +18,14 @@ const controls = {
   fireball_colour: [255, 0, 0],
   ground_colour: [255, 0, 0],
   sky_colour: [255, 0, 0],
+  fireball_scale: 1.
 };
 
 let icosphere: Icosphere;
 let square: Square;
 let cube: Cube;
 let prevTesselations: number = 5;
+let gui: DAT.GUI;
 
 function loadScene() {
   icosphere = new Icosphere(vec3.fromValues(0, 0, 0), 1, controls.tesselations);
@@ -38,7 +40,20 @@ function resetScene() {
   controls.fireball_colour = [255,0,0];
   controls.ground_colour = [255,0,0];
   controls.sky_colour = [255,0,0];
+  controls.fireball_scale = 1.;
+  gui.destroy();
+  gui = new DAT.GUI();
+  addGuiElements();
+}
 
+function addGuiElements(){
+  gui.add(controls, 'tesselations', 0, 8).step(1);
+  gui.add(controls, 'Load Scene');
+  gui.add(controls, 'Reset Scene');
+  gui.add(controls, 'fireball_scale', 0.5, 3).step(0.1);
+  gui.addColor(controls, 'fireball_colour');
+  gui.addColor(controls, 'ground_colour');
+  gui.addColor(controls, 'sky_colour');
 }
 
 function main() {
@@ -52,13 +67,8 @@ function main() {
   document.body.appendChild(stats.domElement);
 
   // Add controls to the gui
-  const gui = new DAT.GUI();
-  gui.add(controls, 'tesselations', 0, 8).step(1);
-  gui.add(controls, 'Load Scene');
-  gui.add(controls, 'Reset Scene');
-  gui.addColor(controls, 'fireball_colour');
-  gui.addColor(controls, 'ground_colour');
-  gui.addColor(controls, 'sky_colour');
+  gui = new DAT.GUI();
+  addGuiElements();
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement>document.getElementById('canvas');
@@ -77,8 +87,12 @@ function main() {
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(0.2, 0.2, 0.2, 1);
-  gl.enable(gl.DEPTH_TEST);
 
+  gl.enable(gl.DEPTH_TEST);
+  const skybox = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/skybox-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/skybox-frag.glsl')),
+  ]);
   const flame = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/fireball-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/fireball-frag.glsl')),
@@ -86,10 +100,6 @@ function main() {
   const ground = new ShaderProgram([
     new Shader(gl.VERTEX_SHADER, require('./shaders/ground-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/ground-frag.glsl')),
-  ]);
-  const skybox = new ShaderProgram([
-    new Shader(gl.VERTEX_SHADER, require('./shaders/skybox-vert.glsl')),
-    new Shader(gl.FRAGMENT_SHADER, require('./shaders/skybox-frag.glsl')),
   ]);
 
   // This function will be called every frame
@@ -104,6 +114,9 @@ function main() {
       icosphere.create();
     }
     flame.setGeometryColor(vec4.fromValues(controls.fireball_colour[0] / 255, controls.fireball_colour[1] / 255, controls.fireball_colour[2] / 255, 1));
+    flame.setScale(controls.fireball_scale);
+    flame.setSecondaryColor(vec4.fromValues(controls.ground_colour[0] / 255, controls.ground_colour[1] / 255, controls.ground_colour[2] / 255, 1));
+    flame.setTertiaryColor(vec4.fromValues(controls.sky_colour[0] / 255, controls.sky_colour[1] / 255, controls.sky_colour[2] / 255, 1));
     ground.setGeometryColor(vec4.fromValues(controls.ground_colour[0] / 255, controls.ground_colour[1] / 255, controls.ground_colour[2] / 255, 1));
     skybox.setGeometryColor(vec4.fromValues(controls.sky_colour[0] / 255, controls.sky_colour[1] / 255, controls.sky_colour[2] / 255, 1));
     skybox.setSecondaryColor(vec4.fromValues(controls.ground_colour[0] / 255, controls.ground_colour[1] / 255, controls.ground_colour[2] / 255, 1));
