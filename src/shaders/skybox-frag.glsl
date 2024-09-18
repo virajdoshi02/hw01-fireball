@@ -12,6 +12,7 @@
 precision highp float;
 
 uniform vec4 u_Color; // The color with which to render this instance of geometry.
+uniform vec4 u_Color2;
 uniform float u_Tick;
 // These are the interpolated values out of the rasterizer, so you can't know
 // their specific values without knowing the vertices that contributed to them
@@ -72,7 +73,11 @@ float pattern(vec3 p)
                    fbm( p + 4.0*q + vec3(8.3,2.8,23) ),
                    fbm( p + 4.0*q + vec3(167,942,3) ));
 
-    return fbm( p + 4.0*r );
+    vec3 m = vec3( fbm( p + 4.0*q + 8.0*r + vec3(.7*2.,42./(3.43),03213.3) ),
+                   fbm( p + 4.0*q + 8.0*r + vec3(.3*2.,48./(3.43),3.321) ),
+                   fbm( p + 4.0*q + 8.0*r + vec3(67.*2.,42./(3.43),0.321) ));
+
+    return fbm( p + 4.0*r +8.*m);
 }
 
 float gradient(vec3 pos){
@@ -94,22 +99,16 @@ float gain(float g, float t){
 
 void main()
 {
-    vec4 diffuseColor = u_Color;
+    vec4 diffuseColor = u_Color2;
     vec4 topColor = u_Color;
 
-    float diffuseTerm = dot(normalize(fs_Nor), normalize(fs_LightVec));
-
-    diffuseTerm = clamp(diffuseTerm, 0., 1.);
-
-    float ambientTerm = 0.99f;
-    float lightIntensity = diffuseTerm + ambientTerm;
     float direction = dot(normalize(fs_Nor.xyz), normalize(fs_Pos.xyz - vec3(0,0,5.)));
-    diffuseColor = vec4(mix(diffuseColor.xyz, topColor.xyz + (fbm(fs_Pos.xyz) * 0.33f), bias(((fs_Pos.y) / (1.5f)), 0.27f + (abs(sin(u_Tick / 10.f))) * 0.1f)), 1.f);
-
+    diffuseColor = vec4(mix(diffuseColor.xyz, topColor.xyz, (fs_Pos.y+5.)/100.), 1.f);
 
     vec3 pos = vec3(fs_Pos[0], fs_Pos[1], fs_Pos[2]);
-    pos = pos + vec3(0,-2.,0);
+    pos = (pos+vec3(1000.,0,0))/5.;
     if(fs_Pos.y<0.)
-        diffuseColor = u_Color;
-    out_Col = vec4(diffuseColor.xyz*(gain(0.6,gradient(pos)*pattern(pos - vec3(0,mod(u_Tick/20.,10000.),0)))),1.);
+        diffuseColor = u_Color2;
+
+    out_Col = vec4(diffuseColor.xyz*(gain(0.8,gradient(pos)*pattern(pos/5.-vec3(0,mod(u_Tick/100.,10000.),0)))),1.);
 }
